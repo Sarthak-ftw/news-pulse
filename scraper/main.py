@@ -81,8 +81,8 @@ def run_pipeline():
         
         entries = fetcher.fetch_feed_entries(url)
         
-        # Limit to 100 articles per feed (max 1000 total)
-        entries = entries[:100]
+        # Limit to 15 articles per feed (max 150 total per run) to ensure fast runs and prevent rate limits
+        entries = entries[:15]
             
         for entry in entries:
             raw_entries_with_sources.append((entry, source))
@@ -137,9 +137,13 @@ def run_pipeline():
         return 0, 0
         
     # 4. Extract full body text (with graceful fallback to summary)
+    # Only download full text for the first 30 new articles to prevent rate limiting and optimize run speed.
     for index, art in enumerate(new_articles, 1):
-        logger.info(f"[{index}/{len(new_articles)}] Extracting content for: {art['title']}")
-        art["body"] = fetcher.extract_full_text(art["url"], art["summary"])
+        if index <= 30:
+            logger.info(f"[{index}/{len(new_articles)}] Extracting content for: {art['title']}")
+            art["body"] = fetcher.extract_full_text(art["url"], art["summary"])
+        else:
+            art["body"] = fetcher.strip_html_tags(art["summary"])
         
     # 5. Run TF-IDF clustering on all new articles
     try:

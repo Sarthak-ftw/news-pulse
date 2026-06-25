@@ -3,7 +3,7 @@ import re
 from html.parser import HTMLParser
 import feedparser
 import trafilatura
-from newspaper import Article
+from newspaper import Article, Config
 
 logger = logging.getLogger(__name__)
 
@@ -72,10 +72,12 @@ def extract_with_trafilatura(url: str) -> str or None:
 
 def extract_with_newspaper(url: str) -> str or None:
     """
-    Extracts text content using newspaper3k.
+    Extracts text content using newspaper3k with a 5-second timeout.
     """
     try:
-        article = Article(url)
+        config = Config()
+        config.request_timeout = 5
+        article = Article(url, config=config)
         article.download()
         article.parse()
         if article.text:
@@ -83,6 +85,7 @@ def extract_with_newspaper(url: str) -> str or None:
     except Exception as e:
         logger.debug(f"newspaper3k failed for URL {url}: {e}")
     return None
+
 
 def extract_full_text(url: str, summary_fallback: str) -> str:
     """
