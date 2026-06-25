@@ -9,6 +9,7 @@ console.log(`[Database] Initializing pg pool connection to: ${safeLogString}`);
 
 const pool = new Pool({
   connectionString,
+  ssl: connectionString.includes("supabase.co") ? { rejectUnauthorized: false } : false,
 });
 
 // Log pool errors
