@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: news-pulse-backend
+    env: node
+    plan: free # Use the free tier by default
+    rootDir: backend
+    buildCommand: npm install && (pip install -r ../scraper/requirements.txt || pip3 install -r ../scraper/requirements.txt || true)
+    startCommand: node src/index.js
+    envVars:
+      - key: DATABASE_URL
+        sync: false # Set by the user in Render Dashboard
+      - key: PYTHON_SCRIPT_PATH
+        value: ../scraper/main.py
+      - key: PYTHON_BIN
+        value: python3
+      - key: PORT
+        value: 10000

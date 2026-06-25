@@ -1,0 +1,28 @@
+name: Scrape News
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # every hour
+  workflow_dispatch:     # allows manual triggers in GitHub Actions UI
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip' # caching pip dependencies for faster subsequent runs
+
+      - name: Install Python Dependencies
+        run: pip install -r scraper/requirements.txt
+
+      - name: Run Scraper and Clusterer
+        run: python scraper/main.py
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
