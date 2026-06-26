@@ -88,62 +88,30 @@ graph TD
 
 ---
 
-## 7. Deployment Instructions
+## 7. System Architecture & Deployment ("What Runs Where & Why")
 
-This monorepo is ready to deploy across a serverless database (Supabase), a Node.js web hosting platform (Render), a frontend hosting platform (Vercel), and automated background runners (GitHub Actions).
+News Pulse is deployed using a modern, decoupled cloud architecture designed for high availability, low operating costs, and clean separation of concerns:
 
-### 🗄️ Database Setup (Supabase)
-1. **Create Project**: Sign up on [Supabase](https://supabase.com/) and create a new free-tier PostgreSQL project.
-2. **Retrieve Connection String**:
-   - Go to **Project Settings** > **Database**.
-   - Copy the **URI** connection string under Connection Strings (PostgreSQL format).
-   - Ensure the password you entered during project setup is replaced in the URI string placeholder.
-3. **Database Schema**: The schema is automatically initialized or updated with required migrations when the Python scraper is executed for the first time. No manual table creation is required!
+```mermaid
+graph TD
+    A[Vercel CDN Edge] -->|Client REST Queries| B[Render Web Service]
+    B -->|Transaction Pooler port: 6543| C[(Supabase Database)]
+    D[GitHub Actions Cron] -->|Hourly python scraper/clusterer| C
+```
 
----
+1. **Frontend (Vercel)**:
+   - **What**: Next.js App Router static/dynamic client dashboard.
+   - **Why**: Hosted on Vercel for fast global edge CDN distribution, automatic SSL, and seamless serverless routing. It connects to the Render API via `NEXT_PUBLIC_API_URL`.
 
-### 🚀 Backend Service (Render)
-We use a **Render Blueprint** configuration (`render.yaml`) to automate the backend deployment.
+2. **Backend API (Render)**:
+   - **What**: Node.js Express API.
+   - **Why**: Runs on Render to handle persistent JSON API requests, manage CORS, and serve database queries. It connects to Supabase via its Transaction Connection Pooler to optimize resource usage on serverless connections.
 
-1. **Deploying from GitHub**:
-   - Push this repository to your GitHub account.
-   - On the [Render Dashboard](https://dashboard.render.com/), click **New** > **Blueprint**.
-   - Select your repository. Render will automatically detect the `render.yaml` configuration.
-2. **Environment Variables**:
-   - During the Blueprint setup, you will be prompted to enter the `DATABASE_URL`. Paste the Supabase connection string.
-   - The environment variables `PYTHON_SCRIPT_PATH` (defaults to `../scraper/main.py`), `PYTHON_BIN` (defaults to `python3`), and `PORT` (defaults to `10000`) are automatically pre-configured.
-3. **Deploy**: Render will build the Node.js Express backend and install python dependencies in the environment.
+3. **Automated Scraping Pipeline (GitHub Actions)**:
+   - **What**: Python 3.11 feed ingestion, TF-IDF vectorization, and connected-component clustering.
+   - **Why**: Executed as a serverless cron job every hour. By offloading heavy mathematical clustering (`scikit-learn`, `numpy`, `scipy`) from Render's Node.js free containers to GitHub's hosted runners, we keep the main API fast, lightweight, and completely free of memory-exhaustion crashes.
 
----
+4. **Database (Supabase / PostgreSQL)**:
+   - **What**: Relational PostgreSQL database.
+   - **Why**: Supabase provides an enterprise-ready PostgreSQL instance with native support for arrays, lateral joins, and transaction connection pooling (via PgBouncer on port `6543`), ensuring secure and fast concurrent queries.
 
-### 💻 Frontend Deployment (Vercel)
-Vercel is the recommended host for the Next.js frontend.
-
-1. **Import Project**:
-   - Go to [Vercel](https://vercel.com/) and click **Add New** > **Project**.
-   - Choose your GitHub repository.
-2. **Configure Monorepo Settings**:
-   - Set the **Root Directory** to `frontend`.
-   - Vercel will automatically configure the build command (`npm run build`) and output directory for Next.js.
-3. **Configure Environment Variables**:
-   - Add a new environment variable:
-     - **Key**: `NEXT_PUBLIC_API_URL`
-     - **Value**: `https://your-backend-service-url.onrender.com` (replace with your Render backend Web Service URL).
-4. **Deploy**: Click **Deploy**. Vercel will build the frontend and serve it.
-
----
-
-### ⏱ Automated Python Scraper Pipeline (GitHub Actions)
-Rather than relying on Render web services to compile and run resource-heavy machine learning libraries (`scikit-learn`, `numpy`), the scraper pipeline is configured to run serverlessly on GitHub Actions.
-
-1. **Enable GitHub Actions**:
-   - The workflow configuration is located in [scrape.yml](file:///.github/workflows/scrape.yml).
-   - Once pushed to GitHub, navigate to the **Actions** tab of your repository.
-2. **Add Environment Secrets**:
-   - Go to **Settings** > **Secrets and variables** > **Actions** in your GitHub repository.
-   - Click **New repository secret**.
-   - **Name**: `DATABASE_URL`
-   - **Value**: Paste the Supabase connection string.
-3. **How it Runs**:
-   - The workflow runs automatically **every hour** via the cron trigger `0 * * * *`.
-   - You can also manually trigger it at any time by going to the **Actions** tab, selecting **Scrape News**, and clicking **Run workflow**.
