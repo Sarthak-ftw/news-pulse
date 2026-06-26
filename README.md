@@ -1,6 +1,9 @@
 # News Pulse ⚡ - Real-time News Clustering & Editorial Dashboard
 
+🔗 **Live Production Demo**: [https://news-pulse-orcin-pi.vercel.app/](https://news-pulse-orcin-pi.vercel.app/)
+
 News Pulse is a highly polished, recruiter-ready production dashboard that fetches, normalizes, and groups real-time news articles from various RSS feeds into unified "story clusters" using custom machine learning clustering algorithms. It features a modern, responsive, and beautifully designed user interface designed to showcase complex data aggregates cleanly.
+
 
 ---
 
